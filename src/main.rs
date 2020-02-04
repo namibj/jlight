@@ -8,9 +8,9 @@ fn main() {
     let start_time = std::time::Instant::now();
     let mut ast = vec![];
     let r = Reader::from_string(
-        " 
+        "
 function fac(x) {
-    
+
     if x < 2 {
         return 1
     } else {
@@ -22,7 +22,7 @@ io.writeln(fac(6))
 ",
     );
     let mut p = Parser::new(r, &mut ast);
-    p.parse().unwrap();
+    //p.parse().unwrap();
     let mut ctx = compile(ast);
     ctx.finalize();
     let state = jlight_vm::util::arc::Arc::new(jlight_vm::runtime::state::State::new());

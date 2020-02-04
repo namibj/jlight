@@ -1,7 +1,7 @@
 use std::fmt;
 use std::result::Result;
 
-#[derive(Clone, Debug, PartialEq, Eq, Copy)]
+#[derive(Clone, Debug, PartialEq, Eq, Copy, Default)]
 pub struct Position {
     pub line: u32,
     pub column: u32,

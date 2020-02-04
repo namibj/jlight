@@ -1,12 +1,12 @@
 use crate::token::Position;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Default)]
 pub struct Expr {
     pub pos: Position,
     pub expr: ExprKind,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub enum ExprKind {
     Assign(Box<Expr>, Box<Expr>),
     BinOp(Box<Expr>, String, Box<Expr>),
@@ -32,12 +32,18 @@ pub enum ExprKind {
     Nil,
     Break,
     Continue,
-    Throw(String),
+    Throw(Box<Expr>),
     ConstBool(bool),
     Array(Vec<Box<Expr>>),
     ArrayIndex(Box<Expr>, Box<Expr>),
     This,
     Import(String),
+}
+
+impl Default for ExprKind {
+    fn default() -> Self {
+        ExprKind::Nil
+    }
 }
 
 use std::fmt;
