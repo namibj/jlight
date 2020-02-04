@@ -6,7 +6,7 @@ pub struct Expr {
     pub expr: ExprKind,
 }
 
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
     Assign(Box<Expr>, Box<Expr>),
     BinOp(Box<Expr>, String, Box<Expr>),
