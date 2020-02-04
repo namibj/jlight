@@ -204,7 +204,6 @@ fn parse_expression<'b>(i: &'b str) -> EResult {
         TokenKind::Continue => self.parse_continue(),
         TokenKind::Return => self.parse_return(),
         TokenKind::Throw => self.parse_throw(),
-        TokenKind::Import => self.parse_import(),
         _ => self.parse_binary(0),
     }*/
     unimplemented!()
