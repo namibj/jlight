@@ -132,16 +132,6 @@ fn parse_function_param<'b>(i: &'b str) -> Result<String, MsgWithPos> {
     unimplemented!()
 }
 
-fn parse_import<'b>(i: &'b str) -> EResult {
-    /*let pos = self.expect_token(TokenKind::Import)?.position;
-    if let ExprKind::ConstStr(s) = self.lit_str()?.expr {
-        return Ok(expr!(ExprKind::Import(s.clone()), pos));
-    } else {
-        unreachable!()
-    }*/
-    unimplemented!()
-}
-
 fn parse_function<'b>(i: &'b str) -> EResult {
     let fn_arg_sep = tag(",");
     let fn_arg = expect_identifier;
