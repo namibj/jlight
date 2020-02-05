@@ -174,10 +174,7 @@ fn parse_let<'b>(i: &'b str) -> EResult {
 
 fn parse_return<'b>(i: &'b str) -> EResult {
     map(pair(tag("return"), opt(parse_expression)), |(_, expr)| {
-        exp!(ExprKind::Return(match expr {
-            Some(expr) => Some(Box::new(expr)),
-            None => None,
-        }))
+        exp!(ExprKind::Return(expr.map(Box::new)))
     })(i)
 }
 
