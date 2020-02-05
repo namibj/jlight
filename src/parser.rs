@@ -145,7 +145,6 @@ fn parse_function<'b>(i: &'b str) -> EResult {
     map(tup, |(name, _, params, _, block)| {
         exp!(ExprKind::Function(name, params, Box::new(block)))
     })(i)
-    //Ok(expr!(ExprKind::Function(name, params, block), pos))
 }
 
 fn parse_let<'b>(i: &'b str) -> EResult {
@@ -215,9 +214,10 @@ fn parse_throw<'b>(i: &'b str) -> EResult {
 }
 
 fn parse_while<'b>(i: &'b str) -> EResult {
-    map(tuple((tag("while"), parse_expression, parse_block)), |(_, expr, block)| {
-        exp!(ExprKind::While(Box::new(expr), Box::new(block)))
-    })(i)
+    map(
+        tuple((tag("while"), parse_expression, parse_block)),
+        |(_, expr, block)| exp!(ExprKind::While(Box::new(expr), Box::new(block))),
+    )(i)
 }
 
 fn parse_match<'b>(i: &'b str) -> EResult {
