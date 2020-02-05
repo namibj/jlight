@@ -173,10 +173,12 @@ fn parse_let<'b>(i: &'b str) -> EResult {
 }
 
 fn parse_return<'b>(i: &'b str) -> EResult {
-    /*let pos = self.expect_token(TokenKind::Return)?.position;
-    let expr = self.parse_expression()?;
-    Ok(expr!(ExprKind::Return(Some(expr)), pos))*/
-    unimplemented!()
+    map(pair(tag("return"), opt(parse_expression)), |(_, expr)| {
+        exp!(ExprKind::Return(match expr {
+            Some(expr) => Some(Box::new(expr)),
+            None => None,
+        }))
+    })(i)
 }
 
 fn parse_expression<'b>(i: &'b str) -> EResult {
