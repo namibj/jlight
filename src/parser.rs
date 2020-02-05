@@ -149,19 +149,27 @@ fn parse_function<'b>(i: &'b str) -> EResult {
 }
 
 fn parse_let<'b>(i: &'b str) -> EResult {
-    /*let reassignable = self.token.is(TokenKind::Var);
+    //let reassignable = alt((value(true, tag("var")), value(false, tag("let"))));
 
-    let pos = self.advance_token()?.position;
-    let ident = self.expect_identifier()?;
-    let expr = if self.token.is(TokenKind::Eq) {
-        self.expect_token(TokenKind::Eq)?;
-        let expr = self.parse_expression()?;
-        Some(expr)
-    } else {
-        None
-    };
-    Ok(expr!(ExprKind::Var(reassignable, ident, expr), pos))*/
-    unimplemented!()
+    let initialization = map(
+        tuple((
+            //reassignable,
+            alt((value(true, tag("var")), value(false, tag("let")))),
+            map_str(expect_identifier),
+            tag("="),
+            map(parse_expression, |expr| Some(Box::new(expr))),
+        )),
+        |(r, i, _, e)| exp!(ExprKind::Var(r, i, e)),
+    );
+    let declaration = map(
+        tuple((
+            //reassignable,
+            alt((value(true, tag("var")), value(false, tag("let")))),
+            map_str(expect_identifier),
+        )),
+        |(r, i)| exp!(ExprKind::Var(r, i, None)),
+    );
+    alt((initialization, declaration))(i)
 }
 
 fn parse_return<'b>(i: &'b str) -> EResult {
