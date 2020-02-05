@@ -222,11 +222,9 @@ fn parse_throw<'b>(i: &'b str) -> EResult {
 }
 
 fn parse_while<'b>(i: &'b str) -> EResult {
-    /*let pos = self.expect_token(TokenKind::While)?.position;
-    let cond = self.parse_expression()?;
-    let block = self.parse_block()?;
-    Ok(expr!(ExprKind::While(cond, block), pos))*/
-    unimplemented!()
+    map(tuple((tag("while"), parse_expression, parse_block)), |(_, expr, block)| {
+        exp!(ExprKind::While(Box::new(expr), Box::new(block)))
+    })(i)
 }
 
 fn parse_match<'b>(i: &'b str) -> EResult {
