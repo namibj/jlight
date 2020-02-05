@@ -58,10 +58,10 @@ fn parse_nil<'b>(i: &'b str) -> EResult {
 }
 
 fn parse_bool_literal<'b>(i: &'b str) -> EResult {
-    /*let tok = self.advance_token()?;
-    let value = tok.is(TokenKind::True);
-    Ok(expr!(ExprKind::ConstBool(value), tok.position))*/
-    unimplemented!()
+    let parse_true = value(exp!(ExprKind::ConstBool(true)), tag("true"));
+    let parse_false = value(exp!(ExprKind::ConstBool(false)), tag("false"));
+
+    alt((parse_true, parse_false))(i)
 }
 
 fn lit_int<'b>(i: &'b str) -> EResult {
