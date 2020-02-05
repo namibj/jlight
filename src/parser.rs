@@ -3,6 +3,7 @@ use crate::lexer::*;
 use crate::msg::*;
 use crate::reader::Reader;
 use crate::token::*;
+use nom::combinator::value;
 use nom::{
     branch::alt,
     bytes::complete::{escaped, tag},
@@ -53,14 +54,7 @@ fn expect_identifier<'b>(i: &'b str) -> IResult<&'b str, &str> {
 }
 
 fn parse_nil<'b>(i: &'b str) -> EResult {
-    /*let tok = self.advance_token()?;
-    let pos = tok.position;
-    if let TokenKind::Nil = tok.kind {
-        Ok(expr!(ExprKind::Nil, pos))
-    } else {
-        unreachable!()
-    }*/
-    unimplemented!()
+    value(exp!(ExprKind::Nil), tag("nil"))(i)
 }
 
 fn parse_bool_literal<'b>(i: &'b str) -> EResult {
