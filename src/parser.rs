@@ -179,25 +179,21 @@ fn parse_return<'b>(i: &'b str) -> EResult {
 }
 
 fn parse_expression<'b>(i: &'b str) -> EResult {
-    /*match self.token.kind {
-        TokenKind::New => {
-            let pos = self.advance_token()?.position;
-            let calling = self.parse_expression()?;
-            Ok(expr!(ExprKind::New(calling), pos))
-        }
-        TokenKind::Fun => self.parse_function(),
-        TokenKind::Match => self.parse_match(),
-        TokenKind::Let | TokenKind::Var => self.parse_let(),
-        TokenKind::LBrace => self.parse_block(),
-        TokenKind::If => self.parse_if(),
-        TokenKind::While => self.parse_while(),
-        TokenKind::Break => self.parse_break(),
-        TokenKind::Continue => self.parse_continue(),
-        TokenKind::Return => self.parse_return(),
-        TokenKind::Throw => self.parse_throw(),
-        _ => self.parse_binary(0),
-    }*/
-    unimplemented!()
+    let parse_new = preceded(tag("new"), parse_expression);
+    alt((
+        parse_new,
+        parse_function,
+        parse_match,
+        parse_let,
+        parse_block,
+        parse_if,
+        parse_while,
+        parse_break,
+        parse_continue,
+        parse_return,
+        parse_throw,
+        |i| parse_binary(i, 0),
+    ))(i)
 }
 
 fn parse_self<'b>(i: &'b str) -> EResult {
