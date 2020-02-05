@@ -204,19 +204,19 @@ fn parse_expression<'b>(i: &'b str) -> EResult {
 }
 
 fn parse_self<'b>(i: &'b str) -> EResult {
-    map(tag("self"), |s| exp!(ExprKind::This))(i)
+    value(exp!(ExprKind::This), tag("self"))(i)
 }
 
 fn parse_break<'b>(i: &'b str) -> EResult {
-    map(tag("break"), |s| exp!(ExprKind::Break))(i)
+    value(exp!(ExprKind::Break), tag("break"))(i)
 }
 
 fn parse_continue<'b>(i: &'b str) -> EResult {
-    map(tag("continue"), |s| exp!(ExprKind::Continue))(i)
+    value(exp!(ExprKind::Continue), tag("continue"))(i)
 }
 
 fn parse_throw<'b>(i: &'b str) -> EResult {
-    map(pair(tag("throw"), parse_expression), |(s, expr)| {
+    map(pair(tag("throw"), parse_expression), |(_, expr)| {
         exp!(ExprKind::Throw(Box::new(expr)))
     })(i)
 }
