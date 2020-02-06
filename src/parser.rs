@@ -9,7 +9,7 @@ use nom::{
     bytes::complete::{escaped, tag},
     character::complete::{alpha1, anychar, none_of, one_of},
     combinator::{map, opt},
-    multi::separated_list,
+    multi::{many0, separated_list},
     number::complete::double,
     sequence::{pair, preceded, terminated, tuple},
     Err, IResult,
@@ -264,15 +264,16 @@ fn parse_if<'b>(i: &'b str) -> EResult {
 }
 
 fn parse_block<'b>(i: &'b str) -> EResult {
-    /*let pos = self.expect_token(TokenKind::LBrace)?.position;
-    let mut exprs = vec![];
-    while !self.token.is(TokenKind::RBrace) && !self.token.is_eof() {
-        let expr = self.parse_expression()?;
-        exprs.push(expr);
-    }
-    self.expect_token(TokenKind::RBrace)?;
-    Ok(expr!(ExprKind::Block(exprs), pos))*/
-    unimplemented!()
+    map(
+        preceded(
+            tag("{"),
+            terminated(
+                many0(map(parse_expression, |expr| Box::new(expr))),
+                tag("}"),
+            ),
+        ),
+        |exprs| exp!(ExprKind::Block(exprs)),
+    )(i)
 }
 
 fn create_binary(tok: Token, left: Box<Expr>, right: Box<Expr>) -> Box<Expr> {
