@@ -348,14 +348,17 @@ pub fn parse_unary<'b>(i: &'b str) -> EResult<'b> {
 }*/
 
 fn parse_call<'b>(i: &'b str) -> EResult {
-    /*let expr = self.parse_expression()?;
-
-    self.expect_token(TokenKind::LParen)?;
-
-    let args = self.parse_comma_list(TokenKind::RParen, |p| p.parse_expression())?;
-
-    Ok(expr!(ExprKind::Call(expr, args), expr.pos))*/
-    unimplemented!()
+    let fn_arg_sep = tag(",");
+    let fn_arg = parse_expression;
+    let tup = tuple((
+        parse_expression,
+        tag("("),
+        separated_list(fn_arg_sep, map(fn_arg, Box::new)),
+        tag(")"),
+    ));
+    map(tup, |(expr, _, params, _)| {
+        exp!(ExprKind::Call(Box::new(expr), params))
+    })(i)
 }
 
 pub fn parse_primary<'b>(i: &'b str) -> EResult {
