@@ -247,26 +247,20 @@ fn parse_match<'b>(i: &'b str) -> EResult {
 }
 
 fn parse_if<'b>(i: &'b str) -> EResult {
-    /*let pos = self.expect_token(TokenKind::If)?.position;
-    let cond = self.parse_expression()?;
-    let then_block = self.parse_expression()?;
-    let else_block = if self.token.is(TokenKind::Else) {
-        self.advance_token()?;
-
-        if self.token.is(TokenKind::If) {
-            let if_block = self.parse_if()?;
-            let block = expr!(ExprKind::Block(vec![if_block]), if_block.pos);
-
-            Some(block)
-        } else {
-            Some(self.parse_expression()?)
-        }
-    } else {
-        None
-    };
-
-    Ok(expr!(ExprKind::If(cond, then_block, else_block), pos))*/
-    unimplemented!()
+    map(
+        tuple((
+            preceded(tag("if"), parse_expression),
+            preceded(tag("then"), parse_expression),
+            opt(preceded(tag("else"), parse_expression)),
+        )),
+        |(cond, then_block, else_block)| {
+            exp!(ExprKind::If(
+                Box::new(cond),
+                Box::new(then_block),
+                else_block.map(Box::new)
+            ))
+        },
+    )(i)
 }
 
 fn parse_block<'b>(i: &'b str) -> EResult {
