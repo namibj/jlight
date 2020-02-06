@@ -439,17 +439,19 @@ fn advance_token(/*&mut self*/) -> Result<Token, MsgWithPos> {
 }
 
 fn parse_lambda<'b>(i: &'b str) -> EResult {
-    /*let tok = self.advance_token()?;
-    let params = if tok.kind == TokenKind::Or {
-        vec![]
-    } else {
-        self.parse_comma_list(TokenKind::BitOr, |f| f.parse_function_param())?
-    };
-
-    let block = self.parse_expression()?;
-    Ok(expr!(ExprKind::Lambda(params, block), tok.position))*/
-    unimplemented!()
+    let fn_arg_sep = tag(",");
+    let fn_arg = expect_identifier;
+    let tup = tuple((
+        tag("|"),
+        separated_list(fn_arg_sep, map_str(fn_arg)),
+        tag("|"),
+        parse_expression,
+    ));
+    map(tup, |(_, params, _, block)| {
+        exp!(ExprKind::Lambda(params, Box::new(block)))
+    })(i)
 }
+
 pub fn parse_factor<'b>(i: &'b str) -> EResult {
     alt((
         preceded(tag("function"), parse_function),
