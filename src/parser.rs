@@ -14,6 +14,8 @@ use nom::{
     sequence::{pair, preceded, terminated, tuple},
     Err, IResult,
 };
+use nom_locate::LocatedSpanEx;
+use nom_recursive::RecursiveInfo;
 use std::mem;
 //#[macro_use] extern crate nom;
 
@@ -40,31 +42,27 @@ macro_rules! exp {
     };
 }
 
-type EResult<'a> = IResult<&'a str, Expr>; //Result<Box<Expr>, MsgWithPos>;
+type Span<'a> = LocatedSpanEx<&'a str, RecursiveInfo>;
 
-fn map_str<'b>(
-    i: impl (Fn(&'b str) -> IResult<&'b str, &'_ str>),
-) -> impl Fn(&'b str) -> IResult<&'b str, String> {
-    map(i, |s| s.to_string())
-}
+type EResult<'a> = IResult<Span<'a>, Expr>;
 
-fn expect_identifier<'b>(i: &'b str) -> IResult<&'b str, &str> {
+fn expect_identifier<'b>(i: Span<'b>) -> IResult<Span<'b>, String> {
     //re_match!(i, r"[a-zA-Z_][a-zA-Z0-9_]*")
-    alpha1(i)
+    map(alpha1, |s: Span| s.to_string())(i)
 }
 
-fn parse_nil<'b>(i: &'b str) -> EResult {
+fn parse_nil<'b>(i: Span) -> EResult {
     value(exp!(ExprKind::Nil), tag("nil"))(i)
 }
 
-fn parse_bool_literal<'b>(i: &'b str) -> EResult {
+fn parse_bool_literal<'b>(i: Span) -> EResult {
     let parse_true = value(exp!(ExprKind::ConstBool(true)), tag("true"));
     let parse_false = value(exp!(ExprKind::ConstBool(false)), tag("false"));
 
     alt((parse_true, parse_false))(i)
 }
 
-fn lit_int<'b>(i: &'b str) -> EResult {
+fn lit_int<'b>(i: Span) -> EResult {
     /*let tok = self.advance_token()?;
     let pos = tok.position;
     if let TokenKind::LitInt(i, _, _) = tok.kind {
@@ -75,27 +73,27 @@ fn lit_int<'b>(i: &'b str) -> EResult {
     unimplemented!()
 }
 
-fn lit_char<'b>(i: &'b str) -> EResult {
+fn lit_char<'b>(i: Span) -> EResult {
     map(preceded(tag("'"), terminated(anychar, tag("'"))), |c| {
         exp!(ExprKind::ConstChar(c))
     })(i)
 }
 
-fn lit_float<'b>(i: &'b str) -> EResult {
+fn lit_float<'b>(i: Span) -> EResult {
     map(double, |f| exp!(ExprKind::ConstFloat(f)))(i)
 }
 
-fn lit_str<'b>(i: &'b str) -> EResult {
+fn lit_str<'b>(i: Span) -> EResult {
     map(
         preceded(
             tag("\""),
             terminated(escaped(none_of("\\\""), '"', one_of("\\\"")), tag("\"")),
         ),
-        |s: &'b str| exp!(ExprKind::ConstStr(s.to_string())),
+        |s: Span| exp!(ExprKind::ConstStr(s.to_string())),
     )(i)
 }
 
-pub fn parse<'b>(i: &'b str) -> Result<(), MsgWithPos> {
+pub fn parse<'b>(i: Span) -> Result<(), MsgWithPos> {
     /*    self.init()?;
     while !self.token.is_eof() {
         self.parse_top_level()?;
@@ -104,7 +102,7 @@ pub fn parse<'b>(i: &'b str) -> Result<(), MsgWithPos> {
     unimplemented!()
 }
 
-fn expect_token<'b>(i: &'b str, kind: TokenKind) -> Result<Token, MsgWithPos> {
+fn expect_token<'b>(i: Span, kind: TokenKind) -> Result<Token, MsgWithPos> {
     /*if self.token.kind == kind {
         let token = self.advance_token()?;
 
@@ -118,7 +116,7 @@ fn expect_token<'b>(i: &'b str, kind: TokenKind) -> Result<Token, MsgWithPos> {
     unimplemented!()
 }
 
-fn parse_top_level<'b>(i: &'b str) -> Result<(), MsgWithPos> {
+fn parse_top_level<'b>(i: Span) -> Result<(), MsgWithPos> {
     /*let expr = self.parse_expression()?;
 
     self.ast.push(expr);
@@ -126,19 +124,19 @@ fn parse_top_level<'b>(i: &'b str) -> Result<(), MsgWithPos> {
     unimplemented!()
 }
 
-fn parse_function_param<'b>(i: &'b str) -> Result<String, MsgWithPos> {
+fn parse_function_param<'b>(i: Span) -> Result<String, MsgWithPos> {
     /*let name = self.expect_identifier()?;
     Ok(name)*/
     unimplemented!()
 }
 
-fn parse_function<'b>(i: &'b str) -> EResult {
+fn parse_function<'b>(i: Span) -> EResult {
     let fn_arg_sep = tag(",");
     let fn_arg = expect_identifier;
     let tup = tuple((
-        opt(map_str(expect_identifier)),
+        opt(expect_identifier),
         tag("("),
-        separated_list(fn_arg_sep, map_str(fn_arg)),
+        separated_list(fn_arg_sep, fn_arg),
         tag(")"),
         parse_block,
     ));
@@ -147,14 +145,14 @@ fn parse_function<'b>(i: &'b str) -> EResult {
     })(i)
 }
 
-fn parse_let<'b>(i: &'b str) -> EResult {
+fn parse_let<'b>(i: Span) -> EResult {
     //let reassignable = alt((value(true, tag("var")), value(false, tag("let"))));
 
     let initialization = map(
         tuple((
             //reassignable,
             alt((value(true, tag("var")), value(false, tag("let")))),
-            map_str(expect_identifier),
+            expect_identifier,
             tag("="),
             map(parse_expression, |expr| Some(Box::new(expr))),
         )),
@@ -164,20 +162,20 @@ fn parse_let<'b>(i: &'b str) -> EResult {
         tuple((
             //reassignable,
             alt((value(true, tag("var")), value(false, tag("let")))),
-            map_str(expect_identifier),
+            expect_identifier,
         )),
         |(r, i)| exp!(ExprKind::Var(r, i, None)),
     );
     alt((initialization, declaration))(i)
 }
 
-fn parse_return<'b>(i: &'b str) -> EResult {
+fn parse_return<'b>(i: Span) -> EResult {
     map(pair(tag("return"), opt(parse_expression)), |(_, expr)| {
         exp!(ExprKind::Return(expr.map(Box::new)))
     })(i)
 }
 
-fn parse_expression<'b>(i: &'b str) -> EResult {
+fn parse_expression<'b>(i: Span) -> EResult {
     let parse_new = preceded(tag("new"), parse_expression);
     alt((
         parse_new,
@@ -195,32 +193,32 @@ fn parse_expression<'b>(i: &'b str) -> EResult {
     ))(i)
 }
 
-fn parse_self<'b>(i: &'b str) -> EResult {
+fn parse_self<'b>(i: Span) -> EResult {
     value(exp!(ExprKind::This), tag("self"))(i)
 }
 
-fn parse_break<'b>(i: &'b str) -> EResult {
+fn parse_break<'b>(i: Span) -> EResult {
     value(exp!(ExprKind::Break), tag("break"))(i)
 }
 
-fn parse_continue<'b>(i: &'b str) -> EResult {
+fn parse_continue<'b>(i: Span) -> EResult {
     value(exp!(ExprKind::Continue), tag("continue"))(i)
 }
 
-fn parse_throw<'b>(i: &'b str) -> EResult {
+fn parse_throw<'b>(i: Span) -> EResult {
     map(pair(tag("throw"), parse_expression), |(_, expr)| {
         exp!(ExprKind::Throw(Box::new(expr)))
     })(i)
 }
 
-fn parse_while<'b>(i: &'b str) -> EResult {
+fn parse_while<'b>(i: Span) -> EResult {
     map(
         tuple((tag("while"), parse_expression, parse_block)),
         |(_, expr, block)| exp!(ExprKind::While(Box::new(expr), Box::new(block))),
     )(i)
 }
 
-fn parse_match<'b>(i: &'b str) -> EResult {
+fn parse_match<'b>(i: Span) -> EResult {
     /*let pos = self.expect_token(TokenKind::Match)?.position;
     let value = self.parse_expression()?;
     self.expect_token(TokenKind::LBrace)?;
@@ -246,7 +244,7 @@ fn parse_match<'b>(i: &'b str) -> EResult {
     unimplemented!()
 }
 
-fn parse_if<'b>(i: &'b str) -> EResult {
+fn parse_if<'b>(i: Span) -> EResult {
     map(
         tuple((
             preceded(tag("if"), parse_expression),
@@ -263,7 +261,7 @@ fn parse_if<'b>(i: &'b str) -> EResult {
     )(i)
 }
 
-fn parse_block<'b>(i: &'b str) -> EResult {
+fn parse_block<'b>(i: Span) -> EResult {
     map(
         preceded(
             tag("{"),
@@ -304,7 +302,7 @@ fn create_binary(tok: Token, left: Box<Expr>, right: Box<Expr>) -> Box<Expr> {
     unimplemented!()
 }
 
-fn parse_binary<'b>(i: &'b str, precedence: u32) -> EResult {
+fn parse_binary<'b>(i: Span, precedence: u32) -> EResult {
     /*let mut left = self.parse_unary()?;
     loop {
         let right_precedence = match self.token.kind {
@@ -337,7 +335,7 @@ fn parse_binary<'b>(i: &'b str, precedence: u32) -> EResult {
     unimplemented!()
 }
 
-pub fn parse_unary<'b>(i: &'b str) -> EResult<'b> {
+pub fn parse_unary<'b>(i: Span<'b>) -> EResult<'b> {
     map(pair(one_of("+-!"), parse_primary), |(op, expr)| {
         exp!(ExprKind::Unop(op.to_string(), Box::new(expr)))
     })(i)
@@ -347,7 +345,7 @@ pub fn parse_unary<'b>(i: &'b str) -> EResult<'b> {
     self.parse_binary(0)
 }*/
 
-fn parse_call<'b>(i: &'b str) -> EResult {
+fn parse_call<'b>(i: Span) -> EResult {
     let fn_arg_sep = tag(",");
     let fn_arg = parse_expression;
     let tup = tuple((
@@ -361,7 +359,7 @@ fn parse_call<'b>(i: &'b str) -> EResult {
     })(i)
 }
 
-pub fn parse_primary<'b>(i: &'b str) -> EResult {
+pub fn parse_primary<'b>(i: Span) -> EResult {
     /*let mut left = self.parse_factor()?;
     loop {
         left = match self.token.kind {
@@ -436,12 +434,12 @@ fn advance_token(/*&mut self*/) -> Result<Token, MsgWithPos> {
     unimplemented!()
 }
 
-fn parse_lambda<'b>(i: &'b str) -> EResult {
+fn parse_lambda<'b>(i: Span) -> EResult {
     let fn_arg_sep = tag(",");
     let fn_arg = expect_identifier;
     let tup = tuple((
         tag("|"),
-        separated_list(fn_arg_sep, map_str(fn_arg)),
+        separated_list(fn_arg_sep, fn_arg),
         tag("|"),
         parse_expression,
     ));
@@ -450,7 +448,7 @@ fn parse_lambda<'b>(i: &'b str) -> EResult {
     })(i)
 }
 
-pub fn parse_factor<'b>(i: &'b str) -> EResult {
+pub fn parse_factor<'b>(i: Span) -> EResult {
     alt((
         preceded(tag("function"), parse_function),
         parse_parentheses,
@@ -467,11 +465,11 @@ pub fn parse_factor<'b>(i: &'b str) -> EResult {
     ))(i)
 }
 
-fn parse_parentheses<'b>(i: &'b str) -> EResult {
+fn parse_parentheses<'b>(i: Span) -> EResult {
     preceded(tag("("), terminated(parse_expression, tag(")")))(i)
 }
 
-fn ident<'b>(i: &'b str) -> EResult {
+fn ident<'b>(i: Span) -> EResult {
     /*let pos = self.token.position;
     let ident = self.expect_identifier()?;
 
