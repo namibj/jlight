@@ -13,6 +13,7 @@ regalloc = {path = "jlight-vm/regalloc.rs/lib"}
 hashlink = "0.4"
 nom_locate = "1.0.0"
 nom-recursive = "0.1.1"
+nom-packrat = "0.3.0"
 
 [dependencies.nom]
 version = "5.1.0"

@@ -15,7 +15,8 @@ use nom::{
     Err, IResult,
 };
 use nom_locate::LocatedSpanEx;
-use nom_recursive::RecursiveInfo;
+use nom_recursive::{recursive_parser, RecursiveInfo};
+use nom_packrat::{init, packrat_parser, storage, HasExtraState};
 use std::mem;
 //#[macro_use] extern crate nom;
 
@@ -42,7 +43,19 @@ macro_rules! exp {
     };
 }
 
-type Span<'a> = LocatedSpanEx<&'a str, RecursiveInfo>;
+#[derive(Ord, PartialOrd, Eq, PartialEq, Clone)]
+pub enum OperatorPrecedence {
+    None,
+    Or,
+    And,
+    Assign,
+    Cmp,
+    Bit,
+    AddShift,
+    Mul,
+}
+
+type Span<'a> = LocatedSpanEx<&'a str, Option<OperatorPrecedence>>;
 
 type EResult<'a> = IResult<Span<'a>, Expr>;
 
@@ -189,7 +202,7 @@ fn parse_expression<'b>(i: Span) -> EResult {
         parse_continue,
         parse_return,
         parse_throw,
-        |i| parse_binary(i, 0),
+        map(parse_binary, |(expr, _)| expr),
     ))(i)
 }
 
@@ -302,37 +315,51 @@ fn create_binary(tok: Token, left: Box<Expr>, right: Box<Expr>) -> Box<Expr> {
     unimplemented!()
 }
 
-fn parse_binary<'b>(i: Span, precedence: u32) -> EResult {
-    /*let mut left = self.parse_unary()?;
-    loop {
-        let right_precedence = match self.token.kind {
-            TokenKind::Or => 1,
-            TokenKind::And => 2,
-            TokenKind::Eq => 3,
-            TokenKind::EqEq
-            | TokenKind::Ne
-            | TokenKind::Lt
-            | TokenKind::Le
-            | TokenKind::Gt
-            | TokenKind::Ge => 4,
-            TokenKind::BitOr | TokenKind::BitAnd | TokenKind::Caret => 6,
-            TokenKind::LtLt | TokenKind::GtGt | TokenKind::Add | TokenKind::Sub => 8,
-            TokenKind::Mul | TokenKind::Div | TokenKind::Mod => 9,
-            _ => {
-                return Ok(left);
-            }
-        };
-        if precedence >= right_precedence {
-            return Ok(left);
-        }
-
-        let tok = self.advance_token()?;
-        left = {
-            let right = self.parse_binary(right_precedence)?;
-            self.create_binary(tok, left, right)
-        };
-    }*/
-    unimplemented!()
+//#[recursive_parser]
+fn parse_binary<'b>(s: Span<'b>) -> IResult<Span<'b>, (Expr, OperatorPrecedence)> {
+    let parse_operator = alt((
+        map(tag("||"), |t| (t, OperatorPrecedence::Or)),
+        map(tag("&&"), |t| (t, OperatorPrecedence::And)),
+        map(tag("="), |t| (t, OperatorPrecedence::Assign)),
+        map(
+            alt((
+                tag("=="),
+                tag("!="),
+                tag("<"),
+                tag("<="),
+                tag(">"),
+                tag(">="),
+            )),
+            |t| (t, OperatorPrecedence::Cmp),
+        ),
+        map(alt((tag("|"), tag("&"), tag("^"))), |t| {
+            (t, OperatorPrecedence::Bit)
+        }),
+        map(alt((tag("<<"), tag(">>"), tag("+"), tag("-"))), |t| {
+            (t, OperatorPrecedence::AddShift)
+        }),
+        map(alt((tag("*"), tag("/"), tag("%"))), |t| {
+            (t, OperatorPrecedence::Mul)
+        }),
+    ));
+    let subexpr = alt((
+        map(parse_unary, |expr| (expr, OperatorPrecedence::None)),
+        parse_binary,
+    ));
+    let (s, (left, left_precedence)) = subexpr(s)?;
+    let (s, (op, precedence)) = parse_operator(s)?;
+    let (s, (right, right_precedence)) = subexpr(s)?;
+    Ok((
+        s,
+        (
+            exp!(ExprKind::BinOp(
+                Box::new(left),
+                op.fragment.to_string(),
+                Box::new(right)
+            )),
+            precedence,
+        ),
+    ))
 }
 
 pub fn parse_unary<'b>(i: Span<'b>) -> EResult<'b> {
