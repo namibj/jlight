@@ -1,4 +1,6 @@
 use crate::token::Position;
+use core::ops::Deref;
+use std::borrow::Borrow;
 
 #[derive(Clone, PartialEq, Default)]
 pub struct Expr {
@@ -7,12 +9,34 @@ pub struct Expr {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct Ident(String);
+
+impl From<Ident> for String {
+    fn from(ident: Ident) -> Self {
+        ident.0
+    }
+}
+
+impl Deref for Ident {
+    type Target = String;
+    fn deref(&self) -> &String {
+        &self.0
+    }
+}
+
+impl Borrow<String> for Ident {
+    fn borrow(&self) -> &String {
+        &self.0
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
     Assign(Box<Expr>, Box<Expr>),
     BinOp(Box<Expr>, String, Box<Expr>),
     Unop(String, Box<Expr>),
-    Access(Box<Expr>, String),
-    Ident(String),
+    Access(Box<Expr>, Ident),
+    Ident(Ident),
     Function(Option<String>, Vec<String>, Box<Expr>),
     Class(String, Box<Expr>, Option<Box<Expr>>),
     Lambda(Vec<String>, Box<Expr>),

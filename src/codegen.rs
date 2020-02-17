@@ -236,23 +236,23 @@ impl Context {
     pub fn compile_access(&mut self, e: &ExprKind) -> Access {
         match e {
             ExprKind::Ident(name) => {
-                let l = self.locals.get(name);
+                let l = self.locals.get(name as &str);
                 let s: &str = name;
                 if l.is_some() {
                     let l = *l.unwrap();
-                    return Access::Stack(name.to_owned(), l);
+                    return Access::Stack(name.to_owned().to_string(), l);
                 } else if self.env.contains_key(s) {
                     let l = self.env.get(s);
                     self.used_upvars.insert(s.to_owned(), *l.unwrap());
                     self.nenv += 1;
                     return Access::Env(*l.unwrap());
                 } else {
-                    let (g, n) = self.global(&Global::Var(name.to_owned()));
-                    return Access::Global(g, n, name.to_owned());
+                    let (g, n) = self.global(&Global::Var(name.to_owned().to_string()));
+                    return Access::Global(g, n, name.to_owned().to_string());
                 }
             }
             ExprKind::Access(e, f) => {
-                return Access::Field(e.clone(), f.to_owned());
+                return Access::Field(e.clone(), String::from(f.to_owned()));
             }
             ExprKind::This => Access::This,
             ExprKind::ArrayIndex(ea, ei) => {
@@ -583,7 +583,7 @@ impl Context {
                     ExprKind::Access(object, fields) => {
                         let this = self.compile(object, tail);
                         let field = self.new_reg();
-                        let (s, _) = self.global(&Global::Str(fields.to_owned()));
+                        let (s, _) = self.global(&Global::Str(fields.to_owned().to_string()));
                         let sr = self.new_reg();
                         self.write(Instruction::LoadGlobal(sr, s as _));
                         self.write(Instruction::Load(field, this, sr));

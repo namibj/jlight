@@ -1,3 +1,4 @@
+use crate::ast::Ident;
 use crate::ast::*;
 use crate::lexer::*;
 use crate::msg::*;
@@ -372,52 +373,38 @@ pub fn parse_unary<'b>(i: Span<'b>) -> EResult<'b> {
     self.parse_binary(0)
 }*/
 
-fn parse_call<'b>(i: Span) -> EResult {
+fn parse_call<'b>(
+    expr_parser: impl Fn(Span<'b>) -> EResult<'b>,
+) -> impl Fn(Span<'b>) -> EResult<'b> {
     let fn_arg_sep = tag(",");
     let fn_arg = parse_expression;
     let tup = tuple((
-        parse_expression,
+        expr_parser,
         tag("("),
         separated_list(fn_arg_sep, map(fn_arg, Box::new)),
         tag(")"),
     ));
     map(tup, |(expr, _, params, _)| {
         exp!(ExprKind::Call(Box::new(expr), params))
-    })(i)
+    })
 }
 
-pub fn parse_primary<'b>(i: Span) -> EResult {
-    /*let mut left = self.parse_factor()?;
-    loop {
-        left = match self.token.kind {
-            TokenKind::Dot => {
-                let tok = self.advance_token()?;
-                let ident = self.expect_identifier()?;
-                expr!(ExprKind::Access(left, ident), tok.position)
-            }
-            TokenKind::LBracket => {
-                let tok = self.advance_token()?;
-                let index = self.parse_expression()?;
-                self.expect_token(TokenKind::RBracket)?;
-                expr!(ExprKind::ArrayIndex(left, index), tok.position)
-            }
-            _ => {
-                if self.token.is(TokenKind::LParen) {
-                    let expr = left;
-
-                    self.expect_token(TokenKind::LParen)?;
-
-                    let args =
-                        self.parse_comma_list(TokenKind::RParen, |p| p.parse_expression())?;
-
-                    expr!(ExprKind::Call(expr, args), expr.pos)
-                } else {
-                    return Ok(left);
-                }
-            }
-        }
-    }*/
-    unimplemented!()
+fn parse_primary<'b>(s: Span<'b>) -> EResult<'b> {
+    alt((
+        map(
+            tuple((parse_factor, preceded(tag("."), ident))),
+            |(left, ident)| exp!(ExprKind::Access(Box::new(left), ident)),
+        ),
+        map(
+            tuple((
+                parse_factor,
+                preceded(tag("["), terminated(parse_expression, tag("]"))),
+            )),
+            |(left, index)| exp!(ExprKind::ArrayIndex(Box::new(left), Box::new(index))),
+        ),
+        parse_call(parse_factor),
+        parse_factor,
+    ))(s)
 }
 
 fn parse_comma_list<F, R>(
@@ -484,7 +471,7 @@ pub fn parse_factor<'b>(i: Span) -> EResult {
         lit_float,
         lit_str,
         parse_self,
-        ident,
+        map(ident, |ident| exp!(ExprKind::Ident(ident))),
         parse_lambda,
         parse_bool_literal,
         parse_bool_literal,
@@ -496,7 +483,7 @@ fn parse_parentheses<'b>(i: Span) -> EResult {
     preceded(tag("("), terminated(parse_expression, tag(")")))(i)
 }
 
-fn ident<'b>(i: Span) -> EResult {
+fn ident<'b>(i: Span) -> IResult<Span<'b>, Ident> {
     /*let pos = self.token.position;
     let ident = self.expect_identifier()?;
 
