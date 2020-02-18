@@ -18,6 +18,6 @@ jobs:
         git submodule sync --recursive
         git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
     - name: Build
-      run: cargo build --frozen --verbose
+      run: cargo build --locked --verbose
     - name: Run tests
-      run: cargo test --frozen --verbose
+      run: cargo test --locked --verbose
