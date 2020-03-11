@@ -4,11 +4,18 @@ use crate::lexer::*;
 use crate::msg::*;
 use crate::reader::Reader;
 use crate::token::*;
+use nom::combinator::all_consuming;
+use nom::combinator::map_opt;
+use nom::combinator::map_parser;
+use nom::combinator::not;
+use nom::combinator::recognize;
 use nom::combinator::value;
+use nom::AsChar;
+use nom::InputTakeAtPosition;
 use nom::{
     branch::alt,
     bytes::complete::{escaped, tag},
-    character::complete::{alpha1, anychar, none_of, one_of},
+    character::complete::{anychar, none_of, one_of},
     combinator::{map, opt},
     multi::{many0, separated_list},
     number::complete::double,
@@ -19,7 +26,6 @@ use nom_locate::LocatedSpanEx;
 use nom_recursive::{recursive_parser, RecursiveInfo};
 use nom_packrat::{init, packrat_parser, storage, HasExtraState};
 use std::mem;
-//#[macro_use] extern crate nom;
 
 pub struct Parser<'a> {
     lexer: Lexer,
@@ -60,9 +66,33 @@ type Span<'a> = LocatedSpanEx<&'a str, Option<OperatorPrecedence>>;
 
 type EResult<'a> = IResult<Span<'a>, Expr>;
 
+fn alphanumeric_underscore0<'b>(input: Span<'b>) -> IResult<Span<'b>, Span<'b>>
+where
+    <Span<'b> as InputTakeAtPosition>::Item: AsChar,
+{
+    input.split_at_position_complete(|item| !(item.is_alphanum() || item == '_'))
+}
+
 fn expect_identifier<'b>(i: Span<'b>) -> IResult<Span<'b>, String> {
-    //re_match!(i, r"[a-zA-Z_][a-zA-Z0-9_]*")
-    map(alpha1, |s: Span| s.to_string())(i)
+    map(
+        map_parser(
+            recognize(tuple((
+                map_opt(anychar, |c| {
+                    if c.is_alpha() || c == '_' {
+                        Some(())
+                    } else {
+                        None
+                    }
+                }),
+                alphanumeric_underscore0,
+            ))),
+            recognize(
+                // Filter out lone underscores, because those aren't identifiers.
+                not(all_consuming(tag("_"))),
+            ),
+        ),
+        |s: Span| s.to_string(),
+    )(i)
 }
 
 fn parse_nil<'b>(i: Span) -> EResult {
@@ -407,39 +437,6 @@ fn parse_primary<'b>(s: Span<'b>) -> EResult<'b> {
     ))(s)
 }
 
-fn parse_comma_list<F, R>(
-    //    &mut self,
-    stop: TokenKind,
-    mut parse: F,
-) -> Result<Vec<R>, MsgWithPos>
-where
-    F: FnMut(&mut Parser) -> Result<R, MsgWithPos>,
-{
-    /*let mut data = vec![];
-    let mut comma = true;
-
-    while !self.token.is(stop.clone()) && !self.token.is_eof() {
-        if !comma {
-            return Err(MsgWithPos::new(
-                self.token.position,
-                Msg::ExpectedToken(TokenKind::Comma.name().into(), self.token.name()),
-            ));
-        }
-
-        let entry = parse(self)?;
-        data.push(entry);
-
-        comma = self.token.is(TokenKind::Comma);
-        if comma {
-            self.advance_token()?;
-        }
-    }
-
-    self.expect_token(stop)?;
-
-    Ok(data)*/
-    unimplemented!()
-}
 
 fn advance_token(/*&mut self*/) -> Result<Token, MsgWithPos> {
     /*let tok = self.lexer.read_token()?;
