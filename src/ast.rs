@@ -48,7 +48,7 @@ pub enum ExprKind {
     New(Box<Expr>),
     ConstFloat(f64),
     Object(Vec<(Box<Expr>, Box<Expr>)>),
-    Var(bool, String, Option<Box<Expr>>),
+    Var(bool, Ident, Option<Box<Expr>>),
     While(Box<Expr>, Box<Expr>),
     Block(Vec<Box<Expr>>),
     Return(Option<Box<Expr>>),

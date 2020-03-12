@@ -196,7 +196,7 @@ fn parse_let<'b>(i: Span) -> EResult {
         tuple((
             //reassignable,
             alt((value(true, tag("var")), value(false, tag("let")))),
-            expect_identifier,
+            map(expect_identifier, Ident),
             tag("="),
             map(parse_expression, |expr| Some(Box::new(expr))),
         )),
@@ -206,7 +206,7 @@ fn parse_let<'b>(i: Span) -> EResult {
         tuple((
             //reassignable,
             alt((value(true, tag("var")), value(false, tag("let")))),
-            expect_identifier,
+            map(expect_identifier, Ident),
         )),
         |(r, i)| exp!(ExprKind::Var(r, i, None)),
     );

@@ -430,7 +430,7 @@ impl Context {
                         r
                     }
                 };
-                self.locals.insert(name.to_owned(), r as _);
+                self.locals.insert(String::from(name.to_owned()), r as _);
 
                 r
             }
