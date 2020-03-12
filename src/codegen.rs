@@ -654,9 +654,9 @@ impl Context {
 
     pub fn compile_function(
         &mut self,
-        params: &[String],
+        params: &[Ident],
         e: &Box<Expr>,
-        vname: Option<String>,
+        vname: Option<Ident>,
     ) -> u32 {
         let mut ctx = Context {
             g: self.g.clone(),
@@ -681,15 +681,15 @@ impl Context {
             ctx.stack += 1;
             let r = ctx.new_reg();
             ctx.write(Instruction::Pop(r));
-            ctx.locals.insert(p.to_owned(), r as _);
+            ctx.locals.insert(String::from(p.to_owned()), r as _);
         }
 
         let gid = ctx.g.borrow().table.len();
         if vname.is_some() {
-            ctx.g
-                .borrow_mut()
-                .globals
-                .insert(Global::Var(vname.as_ref().unwrap().to_owned()), gid as i32);
+            ctx.g.borrow_mut().globals.insert(
+                Global::Var(String::from(vname.as_ref().unwrap().to_owned())),
+                gid as i32,
+            );
         }
         ctx.g.borrow_mut().table.push(Global::Func(gid as i32, -1));
         let r = ctx.compile(e, true);
@@ -704,7 +704,9 @@ impl Context {
             ctx.pos.clone(),
             gid as i32,
             params.len() as i32,
-            vname.unwrap_or(String::from("<anonymous>")),
+            vname
+                .map(String::from)
+                .unwrap_or(String::from("<anonymous>")),
         ));
 
         if ctx.nenv > 0 {

@@ -9,7 +9,7 @@ pub struct Expr {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Ident(String);
+pub struct Ident(pub String);
 
 impl From<Ident> for String {
     fn from(ident: Ident) -> Self {
@@ -37,9 +37,9 @@ pub enum ExprKind {
     Unop(String, Box<Expr>),
     Access(Box<Expr>, Ident),
     Ident(Ident),
-    Function(Option<String>, Vec<String>, Box<Expr>),
+    Function(Option<Ident>, Vec<Ident>, Box<Expr>),
     Class(String, Box<Expr>, Option<Box<Expr>>),
-    Lambda(Vec<String>, Box<Expr>),
+    Lambda(Vec<Ident>, Box<Expr>),
     Match(Box<Expr>, Vec<(Box<Expr>, Box<Expr>)>, Option<Box<Expr>>),
     If(Box<Expr>, Box<Expr>, Option<Box<Expr>>),
     ConstInt(i64),

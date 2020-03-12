@@ -176,9 +176,9 @@ fn parse_function_param<'b>(i: Span) -> Result<String, MsgWithPos> {
 
 fn parse_function<'b>(i: Span) -> EResult {
     let fn_arg_sep = tag(",");
-    let fn_arg = expect_identifier;
+    let fn_arg = map(expect_identifier, Ident);
     let tup = tuple((
-        opt(expect_identifier),
+        opt(map(expect_identifier, Ident)),
         tag("("),
         separated_list(fn_arg_sep, fn_arg),
         tag(")"),
@@ -447,7 +447,7 @@ fn advance_token(/*&mut self*/) -> Result<Token, MsgWithPos> {
 
 fn parse_lambda<'b>(i: Span) -> EResult {
     let fn_arg_sep = tag(",");
-    let fn_arg = expect_identifier;
+    let fn_arg = map(expect_identifier, Ident);
     let tup = tuple((
         tag("|"),
         separated_list(fn_arg_sep, fn_arg),
